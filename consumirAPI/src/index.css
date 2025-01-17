@@ -71,18 +71,37 @@
   background-color: #e9ecef;
   padding: 10px;
   border-radius: 5px;
-  white-space: pre-wrap;
+  white-space: pre-wrap; /* Preserve quebras de linha */
 }
 
-.loading {
-  font-size: 1.2rem;
-  text-align: center;
-  margin-top: 50px;
+form {
+  margin-bottom: 20px;
 }
 
+input {
+  padding: 8px;
+  font-size: 1rem;
+  margin-right: 10px;
+  width: 80%;
+}
+
+button {
+  padding: 8px 16px;
+  font-size: 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #218838;
+}
+
+.loading,
 .error {
   font-size: 1.2rem;
-  text-align: center;
-  margin-top: 50px;
   color: red;
+  margin-top: 50px;
 }

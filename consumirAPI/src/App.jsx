@@ -1,39 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./index.css";
 
 const App = () => {
   const [songData, setSongData] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(50); // Volume inicial
   const [showLyrics, setShowLyrics] = useState(false);
+  const [songId, setSongId] = useState(""); // ID da música ou nome
 
-  const songId = "3135556"; // ID da música no Deezer (exemplo: Harder, Better, Faster, Stronger - Daft Punk)
+  // Função para buscar os dados da música pelo nome (ID ou título)
+  const fetchSongData = async (searchTerm) => {
+    try {
+      const response = await fetch(
+        `https://cors-anywhere.herokuapp.com/https://api.deezer.com/search?q=${encodeURIComponent(
+          searchTerm
+        )}`
+      );
 
-  useEffect(() => {
-    const fetchSongData = async () => {
-      try {
-        const response = await fetch(`https://cors-anywhere.herokuapp.com/api.deezer.com/track/${songId}`);
-        if (!response.ok) {
-          throw new Error(`Erro na API Deezer: ${response.status}`);
-        }
+      const data = await response.json();
 
-        const data = await response.json();
-        console.log(data)
+      if (data && data.data && data.data.length > 0) {
+        const song = data.data[0]; // Pega a primeira música encontrada
         setSongData({
-          albumImage: data.album.cover,
-          title: data.title,
-          artist: data.artist.name,
-          preview: data.album.link, // URL de preview da música (30s)
+          albumImage: song.album.cover_big,
+          title: song.title,
+          artist: song.artist.name,
+          preview: song.preview, // URL de preview da música
           lyrics: "Lyrics are not provided by Deezer.", // Deezer não fornece letras
         });
-      } catch (error) {
-        console.error("Erro ao buscar dados da música:", error);
-        setSongData({ error: "Não foi possível carregar os dados da música." });
+      } else {
+        alert("Música não encontrada!");
       }
-    };
-
-    fetchSongData();
-  }, [songId]);
+    } catch (error) {
+      console.error("Erro ao buscar dados da música:", error);
+      alert("Erro ao carregar dados!");
+    }
+  };
 
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -47,64 +49,78 @@ const App = () => {
     setShowLyrics(!showLyrics);
   };
 
-  if (!songData) {
-    return <div className="loading">Carregando dados da música...</div>;
-  }
-
-  if (songData.error) {
-    return <div className="error">{songData.error}</div>;
-  }
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    fetchSongData(songId); // Chama a função para buscar a música
+  };
 
   return (
     <div className="music-player">
-      {/* Imagem do Álbum */}
-      <img
-        src={songData.albumImage}
-        alt={`Capa do álbum ${songData.title}`}
-        className="album-image"
-      />
+      <h1>Busque uma Música</h1>
 
-      {/* Título e Autor */}
-      <h2 className="song-title">{songData.title}</h2>
-      <h3 className="artist-name">{songData.artist}</h3>
-
-      {/* Controle de Volume */}
-      <div className="volume-control">
-        <label htmlFor="volume">Volume: {volume}%</label>
+      {/* Campo de busca (por ID ou título da música) */}
+      <form onSubmit={handleSearchSubmit}>
         <input
-          type="range"
-          id="volume"
-          min="0"
-          max="100"
-          value={volume}
-          onChange={handleVolumeChange}
+          type="text"
+          value={songId}
+          onChange={(e) => setSongId(e.target.value)}
+          placeholder="Digite o nome ou ID da música"
         />
-      </div>
+        <button type="submit">Buscar Música</button>
+      </form>
 
-      {/* Botão de Play/Pause */}
-      <button className="play-pause-button" onClick={togglePlayPause}>
-        {isPlaying ? "Pause" : "Play"}
-      </button>
+      {songData ? (
+        <>
+          {/* Imagem do Álbum */}
+          <img
+            src={songData.albumImage}
+            alt={`Album cover for ${songData.title}`}
+            className="album-image"
+          />
 
-      {/* Reprodução do Preview */}
-      {isPlaying && (
-        <audio
-          src={songData.preview}
-          autoPlay
-          loop
-          volume={volume / 100}
-          onPause={() => setIsPlaying(false)}
-          onPlay={() => setIsPlaying(true)}
-        />
-      )}
+          {/* Título e Artista */}
+          <h2 className="song-title">{songData.title}</h2>
+          <h3 className="artist-name">{songData.artist}</h3>
 
-      {/* Letra da Música */}
-      <div className="lyrics-section">
-        <button className="lyrics-toggle" onClick={toggleLyrics}>
-          {showLyrics ? "Hide Lyrics" : "Show Lyrics"}
-        </button>
-        {showLyrics && <p className="lyrics">{songData.lyrics}</p>}
-      </div>
+          {/* Controle de Volume */}
+          <div className="volume-control">
+            <label htmlFor="volume">Volume: {volume}%</label>
+            <input
+              type="range"
+              id="volume"
+              min="0"
+              max="100"
+              value={volume}
+              onChange={handleVolumeChange}
+            />
+          </div>
+
+          {/* Botão de Play/Pause */}
+          <button className="play-pause-button" onClick={togglePlayPause}>
+            {isPlaying ? "Pause" : "Play"}
+          </button>
+
+          {/* Reprodução do Preview */}
+          {isPlaying && (
+            <audio
+              src={songData.preview}
+              autoPlay
+              loop
+              volume={volume / 100}
+              onPause={() => setIsPlaying(false)}
+              onPlay={() => setIsPlaying(true)}
+            />
+          )}
+
+          {/* Letra da Música */}
+          <div className="lyrics-section">
+            <button className="lyrics-toggle" onClick={toggleLyrics}>
+              {showLyrics ? "Hide Lyrics" : "Show Lyrics"}
+            </button>
+            {showLyrics && <p className="lyrics">{songData.lyrics}</p>}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 };
