@@ -1,52 +1,60 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import "./index.css";
 
 const App = () => {
   const [songData, setSongData] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50); // Volume inicial
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [songId, setSongId] = useState(""); // ID da música ou nome
+  const [songId, setSongId] = useState(""); // ID ou nome da música
+  const audioRef = useRef(null); // Referência para o elemento <audio>
 
   // Função para buscar os dados da música pelo nome (ID ou título)
   const fetchSongData = async (searchTerm) => {
     try {
       const response = await fetch(
-        `https://cors-anywhere.herokuapp.com/https://api.deezer.com/search?q=${encodeURIComponent(
-          searchTerm
-        )}`
+        `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&limit=1`
       );
+
+      if (!response.ok) {
+        throw new Error("Erro ao acessar a iTunes API");
+      }
 
       const data = await response.json();
 
-      if (data && data.data && data.data.length > 0) {
-        const song = data.data[0]; // Pega a primeira música encontrada
+      if (data.results && data.results.length > 0) {
+        const song = data.results[0]; // Pega a primeira música encontrada
         setSongData({
-          albumImage: song.album.cover_big,
-          title: song.title,
-          artist: song.artist.name,
-          preview: song.preview, // URL de preview da música
-          lyrics: "Lyrics are not provided by Deezer.", // Deezer não fornece letras
+          albumImage: song.artworkUrl100.replace("100x100", "300x300"),
+          title: song.trackName,
+          artist: song.artistName,
+          preview: song.previewUrl, // URL de preview da música
         });
       } else {
         alert("Música não encontrada!");
       }
     } catch (error) {
       console.error("Erro ao buscar dados da música:", error);
-      alert("Erro ao carregar dados!");
+      alert("Erro ao carregar os dados da música.");
     }
   };
 
   const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const handleVolumeChange = (event) => {
-    setVolume(event.target.value);
-  };
-
-  const toggleLyrics = () => {
-    setShowLyrics(!showLyrics);
+    const newVolume = event.target.value;
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume / 100;
+    }
   };
 
   const handleSearchSubmit = (event) => {
@@ -64,7 +72,7 @@ const App = () => {
           type="text"
           value={songId}
           onChange={(e) => setSongId(e.target.value)}
-          placeholder="Digite o nome ou ID da música"
+          placeholder="Digite o nome da música"
         />
         <button type="submit">Buscar Música</button>
       </form>
@@ -79,8 +87,28 @@ const App = () => {
           />
 
           {/* Título e Artista */}
-          <h2 className="song-title">{songData.title}</h2>
-          <h3 className="artist-name">{songData.artist}</h3>
+          <h2 className="song-title">
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent(
+                songData.title
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {songData.title}
+            </a>
+          </h2>
+          <h3 className="artist-name">
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent(
+                songData.artist
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {songData.artist}
+            </a>
+          </h3>
 
           {/* Controle de Volume */}
           <div className="volume-control">
@@ -101,24 +129,11 @@ const App = () => {
           </button>
 
           {/* Reprodução do Preview */}
-          {isPlaying && (
-            <audio
-              src={songData.preview}
-              autoPlay
-              loop
-              volume={volume / 100}
-              onPause={() => setIsPlaying(false)}
-              onPlay={() => setIsPlaying(true)}
-            />
-          )}
-
-          {/* Letra da Música */}
-          <div className="lyrics-section">
-            <button className="lyrics-toggle" onClick={toggleLyrics}>
-              {showLyrics ? "Hide Lyrics" : "Show Lyrics"}
-            </button>
-            {showLyrics && <p className="lyrics">{songData.lyrics}</p>}
-          </div>
+          <audio
+            ref={audioRef}
+            src={songData.preview}
+            onEnded={() => setIsPlaying(false)}
+          />
         </>
       ) : null}
     </div>

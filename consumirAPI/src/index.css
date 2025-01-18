@@ -105,3 +105,12 @@ button:hover {
   color: red;
   margin-top: 50px;
 }
+
+.song-title a, .artist-name a {
+  text-decoration: none;
+  color: #0073e6;
+}
+
+.song-title a:hover, .artist-name a:hover {
+  text-decoration: underline;
+}
